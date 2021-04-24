@@ -1,12 +1,12 @@
 # Η συγκεκριμένη κλάση περιέχει όλες τις χρήσιμες πληροφορίες για τις καταστάσεις οι οποίες μπορούν να προκύψουν στο παιχνίδι.
 # Κάθε αντικείμενο της κλάσης αυτής είναι δηλαδή μια κατάσταση του παιχνιδιού
 class State:
-    def __init__(self,left_bank,right_bank,side,prior_move,came_from_obj,depth):
+    def __init__(self,left_bank,right_bank,side,previous_move,previous_state,depth):
         self.left_bank = left_bank
         self.right_bank = right_bank
         self.side = side
-        self.prior_move = prior_move
-        self.came_from_obj = came_from_obj
+        self.previous_move = previous_move
+        self.previous_state = previous_state
         self.depth = depth
 
 
@@ -75,17 +75,17 @@ def createStates(state_obj,moves):
 def print_journey(state_obj):
     states = []
     state = state_obj
-    print("\nTREE DEPTH: ",state.depth)
-    print("Our Journey:")
+    print("\nSOLUTION FOUND IN TREE DEPTH: ",state.depth)
+    print("\nOur Journey:\n")
     while(state != None):
         states.append(state)
-        state = state.came_from_obj
+        state = state.previous_state
     states.reverse()
     for pos in range(1,len(states)):
         if((pos-1) % 2 == 0):
-            print(states[pos-1].left_bank," --> Transfer:",states[pos].prior_move," --> ",states[pos-1].right_bank)
+            print(states[pos-1].left_bank," --> Transfer:",states[pos].previous_move," --> ",states[pos-1].right_bank)
         else:
-            print(states[pos-1].left_bank," <-- Transfer:",states[pos].prior_move," <-- ",states[pos-1].right_bank)
+            print(states[pos-1].left_bank," <-- Transfer:",states[pos].previous_move," <-- ",states[pos-1].right_bank)
         print(states[pos].left_bank," -- Current State -- ",states[pos].right_bank)
     if(states[-1].left_bank == [0,0] and states[-1].right_bank == [3,3]):
         print("[0, 0] -- FINAL STATE PROBLEM SOLVED! -- [3, 3]")
@@ -109,7 +109,7 @@ def is_int(num):
 
 #Ελέγχει αν το περιεομενο της απάντησης είναι το αποδεκτό
 def continue_searching():
-    ans = input("Do you want me to look for another solution?[Y/n]: ")
+    ans = input("\nDo you want me to look for another solution?[Y/n]: ")
     while(ans != "y" and ans != "yes" and ans != "n" and ans != "no"):
         ans = input("Please type yes or no: ")
     if(ans == "yes" or ans == "y"):
@@ -170,7 +170,7 @@ def iterative_deepening(states,depth):
 
 #Εμφανίζει τα αρχικά μηνύματα στον χρήστη και εκτελεί τον αλγόριθμο αναζήτης τον οποίο θα επιλέξει
 def options_and_exec(states):
-    print("\nHELLO!\nWelcome to Missionairies and Cannibals game solver.\n"+
+    print("\nHELLO!\nWelcome to Missionaries and Cannibals game solver.\n"+
     "\nTo find a solution using Breadth-First Search algorithm type 1."+
     "\nTo find a solution using Iterative Deepening algorithm type 2.")
     algo = input("\nChoose algorithm: ")
