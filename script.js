@@ -1,21 +1,48 @@
 const MARKED = 'marked'
 const population = 100
 //Οι 42 θεσεις για να δημιουργηθει το γραμμα Π (δυαδες αριθμων)
-const solution = '71386750414292215161718192633404754616875'
+const solution = '7164575043362922150809101112192633404754616875'
 const solution_arr = chromosomeToArray(solution)
 var cellElements = document.querySelectorAll('[data-cell]')
 
 
-function startClicked(){
-    gen = initial_generation(population)
-    best = pick_parents(gen)
+async function startClicked(){
+    cleanGrid()
+    var gen = initial_generation(population)
+    var best = top_N_chromosomes(gen,50)
+    var gen_num = 0
+    let chromo_length = best[0][1].length
+
+    while(!check_solution(best[0][1],solution_arr)){
+        gen_num+=1       
+        var score = ((chromo_length-best[0][0])/chromo_length)*100
+        updateView(gen_num,Math.floor(score))
+        best = top_N_chromosomes(gen,50).slice()
+        gen = mating_pool(best).slice()
+        cleanGrid()
+        printChromosome(best[0][1])  
+        await sleep(20)
+    }
+    best = top_N_chromosomes(gen,10)
+    cleanGrid()
     printChromosome(best[0][1])
+    score = ((chromo_length-best[0][0])/chromo_length)*100
+    console.log(score)
+    updateView(gen_num,score)
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 function cleanGrid(){
     cellElements.forEach(cell => {
         cell.classList.remove(MARKED)
     });
+}
+
+function updateView(gen,accuracy){
+    document.getElementById("gen_num").innerHTML = gen
+    document.getElementById("accuracy").innerHTML = accuracy.toString()+"%"
 }
 
 function printChromosome(chromosome){
@@ -28,13 +55,6 @@ function chromosomeToArray(str){
     let res = str.match(/.{1,2}/g)
     for(let i=0; i<res.length;i++) res[i] = parseInt(res[i],10)
     return res
-}
-
-function addZero(str){
-    if(str.length == 1){
-        str = "0"+str
-    }
-    return str
 }
 
 function manhattan_distance(curr_block, target){
@@ -82,17 +102,22 @@ function mutation(chromosome){
     return chromosome
 }
 //Αποκλιση κάθε θέσης απο την πραγματική
-function fitness_score(chromosome,solution_arr){
+function fitness_score(chromosome,soluton_arr){
     let total_deviation = 0
     for (let i = 0; i < chromosome.length; i++){
-        total_deviation += manhattan_distance(chromosome[i],solution_arr[i])
+       /* if(!solution_arr.includes(chromosome[i])){
+            total_deviation += 1
+        }*/
+        if(solution_arr[i] != chromosome[i]){
+            total_deviation += 1
+        }
     }
     return total_deviation
 }
 
 function initial_generation(population){
     let generation = []
-    for (let i = 0; i < 100; i++){
+    for (let i = 0; i < population; i++){
         let chromosome = []
         while(chromosome.length != solution_arr.length){
             let value = Math.floor(Math.random() * cellElements.length)
@@ -105,13 +130,13 @@ function initial_generation(population){
     return generation
 }
 
-function pick_parents(generation){
+function top_N_chromosomes(generation,N){
     gen_n_scores = []
     generation.forEach(chromosome =>{
         let score = fitness_score(chromosome,solution_arr)
         gen_n_scores.push([score,chromosome])
     })
-    return sort2d(gen_n_scores)
+    return sort2d(gen_n_scores).slice(0,N)
 }
 
 function sort2d(arr){
@@ -131,4 +156,44 @@ function sort2d(arr){
     return arr
 }
 
+function mating_pool(top_genes){
+    let next_gen = []
+    //10% μεταλλάξεις σε κάθε γενία
+    let num_of_mutations =  Math.floor(0.30 * top_genes.length)
+    //20% ελιτισμός σε κάθε γενία
+    let elitism_num = Math.floor(top_genes.length * 0.40)
+    for(let i = 0; i < elitism_num; i++){
+        next_gen.push(top_genes[i][1])
+    }
+    //Το μισό του πληθυσμού που πέρασε στην επόμενη γενία ωσ μερική ανανέωση
+    //θα συμμετάσχει στην διασταύρωση
+    elitism_half = Math.floor(elitism_num/2)
+    for(let i = elitism_half; i < top_genes.length; i++){
+        pick_chromo = Math.floor(Math.random()* top_genes.length)
+        while(pick_chromo == i){
+            pick_chromo = Math.floor(Math.random()* top_genes.length)
+        }
+        chromo = crossover(top_genes[i][1],top_genes[pick_chromo][1])
+        next_gen.push(chromo[0])
+        next_gen.push(chromo[1])
+    }
+    for(let i = 0; i < num_of_mutations; i++){
+        let chromosome = Math.floor(Math.random() * next_gen.length)
+        next_gen[chromosome] = mutation(next_gen[chromosome])
+    }
+    return next_gen
+}
+function check_solution(chromosome,solution_arr){
+    correct = 0
+    for(let i = 0; i < chromosome.length; i++){
+        if(chromosome[i] == solution_arr[i]){
+            correct += 1
+        }
+    }
+    if(correct == solution_arr.length){
+        return true;
+    }else{
+        false;
+    }
+}
 
