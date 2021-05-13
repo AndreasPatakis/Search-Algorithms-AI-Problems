@@ -9,13 +9,43 @@
     <title>Genetic Algorithm Execution</title>
 </head>
 <body>
-    <h1>Press start and let the genetic algorithm begin!</h1>
-    <h2> Generation: </h2>
-    <h2 id="gen_num">0</h2>
+    <h1 style="text-align: center;">Press start and let the genetic algorithm begin!</h1>
+    <h2  id="gen_num">Total generations: 0</h2>
+    <h2 id="accuracy">Average fitness score: 0%</h2>
+    <h2>Total population: 100</h2>
+    <div style="display: inline-block;">
+        <h2>Elitism rate: <select id="elitism" name="elitism">
+            <option value="10">10%</option>
+            <option value="20">20%</option>
+            <option value="30">30%</option>
+            <option value="40">40%</option>
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+            <option value="90">90%</option>
+            <option value="100">100%</option>
+            </select>
+        </h2>
+    </div>
+    <div >
+        <h2>Mutation rate: <select id="mutation" name="mutation">
+            <option value="10">10%</option>
+            <option value="20">20%</option>
+            <option value="30">30%</option>
+            <option value="40">40%</option>
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+            <option value="90">90%</option>
+            <option value="100">100%</option>
+            </select>
+        </h2>
+    </div>
+    <button onClick="startClicked()" id="startBtn">Start</button>
+
     
-    <h2> Accuracy: </h2>
-    <h2 id="accuracy">0%</h2>
-    <button onClick="startClicked()">Start</button>
 
 
 
