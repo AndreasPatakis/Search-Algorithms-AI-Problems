@@ -12,8 +12,22 @@
     <h1 style="text-align: center;">Press start and let the genetic algorithm begin!</h1>
     <h2  id="gen_num">Total generations: 0</h2>
     <h2 id="accuracy">Average fitness score: 0%</h2>
-    <h2>Total population: 100</h2>
     <div style="display: inline-block;">
+        <h2>Total population: <select id="population" name="population">
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+            <option value="400">400</option>
+            <option value="500">500</option>
+            <option value="600">600</option>
+            <option value="700">700</option>
+            <option value="800">800</option>
+            <option value="900">900</option>
+            <option value="1000">1000</option>
+            </select>
+        </h2>
+    </div> 
+    <div>
         <h2>Elitism rate: <select id="elitism" name="elitism">
             <option value="10">10%</option>
             <option value="20">20%</option>
@@ -45,12 +59,7 @@
     </div>
     <button onClick="startClicked()" id="startBtn">Start</button>
 
-    
-
-
-
-
-    <div class="board" id = "board">
+    <div style="margin-top: -450px;" class="board" id = "board">
         <div class="cell" data-cell></div>
         <div class="cell" data-cell></div>
         <div class="cell" data-cell></div>

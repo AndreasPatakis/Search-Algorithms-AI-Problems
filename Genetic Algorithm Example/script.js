@@ -1,5 +1,5 @@
 const MARKED = 'marked'
-const population = 100
+var population = 100
 //Πίνακας με τις θέσεις οι οποίες αποτελούν την λύση μας, σχηματίζουν το γράμμα Π στο grid
 const solution_arr = [71, 64, 57, 50, 43, 36, 29, 22, 15, 8, 9, 10, 11, 12, 19, 26, 33, 40, 47, 54, 61, 68, 75]
 var cellElements = document.querySelectorAll('[data-cell]')
@@ -7,6 +7,8 @@ var cellElements = document.querySelectorAll('[data-cell]')
 //Η συνάρτηση η οποία εκτελείται οταν ο χρήστης πατάει το κουμπί start
 //Είναι η βασική μας συνάρτηση, καλεί τα πάντα.
 async function startClicked(){
+    population = parseInt(document.getElementById("population").value)
+    console.log(population)
     btn = document.getElementById("startBtn").disabled = true;
     var e = document.getElementById("elitism");
     var elitism_rate = e.value*0.01;
@@ -20,8 +22,8 @@ async function startClicked(){
     while(!check_solution(ranked_gen[0][1],solution_arr)){
         gen_num+=1       
         updateView(gen_num,avg_fitness(ranked_gen,chromo_length))
-        ranked_gen = top_N_chromosomes(gen,50).slice()
-        gen = mating_pool(ranked_gen.slice(0,50),elitism_rate,mutation_rate).slice()
+        ranked_gen = top_N_chromosomes(gen,population).slice()
+        gen = mating_pool(ranked_gen.slice(0,population),elitism_rate,mutation_rate).slice()
         cleanGrid()
         printChromosome(ranked_gen[0][1])  
         await sleep(20)
@@ -167,33 +169,82 @@ function sort2d(arr){
     return arr
 }
 
-//Δέχεται τα 50 καλύτερα χρωμοσώματα μιας γενίας, ενα ποσοστό ελιτισμού και ενα ενα ποσοστό μετάλλαξης
-//Απο τα 50 αυτά χρωμοσώματα το ποσοτο ελιτισμού το οποίο επίλεξε ο χρήστης θα μεταφερθεί απευθείας
-//στην επόμενη γενία, ενώ το μισο απο αυτο καθώς και τα υπόλοιπα χρωμοσώματα θα διασταυρωθούν για να
-//παράξουν την υπόλοιπη γενία
-//Απο την τελική γενία θα γίνουν μεταλλάξεις στο ποσοτό χρωμοσωμάτων το οποίο επίλεξε ο χρήστης
-function mating_pool(top_genes,elitism_rate,mutation_rate){
+//Δέχεται μια γενία και αναθέτει αντιστοιχες πιθανότητες επιλογής με βάση την καταλληλότητα τους
+//Δηλαδή τα χρωμοσώματα με καλύτερο σκόρ λαμβάνουν μεγαλύτερη πιθανότητα εμφάνισης
+function calculate_odds(generation){
+    gen_scores = []
+    chromo_length = generation[0][1].length
+    for(let i = 0; i < generation.length; i++){
+        if(gen_scores.includes(generation[i][0]) == false){
+            gen_scores.push(generation[i][0])
+        }
+    }
+    total_score = 0
+    gen_scores.forEach(element => {
+        total_score += chromo_length - element
+    })
+    gen_odds = []
+    gen_scores.forEach(element => {
+        gen_odds.push([element,0,Math.floor((chromo_length - element)*100/total_score)])
+    })
+    for(let i = 1; i < gen_odds.length; i++){
+        gen_odds[i][1] = gen_odds[i-1][2]
+        gen_odds[i][2] = gen_odds[i-1][2] + gen_odds[i][2]
+    }
+    return gen_odds
+}
+
+//Δέχεται τις πιθανότητες εμφάνισης κάθε χρωμοσώματος (με βάση το σκορ), και τα ίδια τα χρωμοσώματα μιας γενίας
+//Επιλέγει ενα χρωμόσωμα και το επιστρέφει
+function pick_chromo(gen_odds,generation){
+    max_num = gen_odds[gen_odds.length-1][2]
+    odd_picked = Math.floor(Math.random()*max_num)
+    score_picked = 0
+    for(let i = 0; i < gen_odds.length; i++){
+        if(odd_picked >= gen_odds[i][1] && odd_picked < gen_odds[i][2]){
+            score_picked = generation[i][0]
+            break
+        }
+    }
+    gen_participants = []
+    for(let i = 0; i < generation.length; i++){
+        if(generation[i][0] == score_picked){
+            gen_participants.push(generation[i])
+        }else if(generation[i][0] > score_picked){
+            break
+        }
+    }
+    random_participant = Math.floor(Math.random() * gen_participants.length)
+    return generation[random_participant][1]
+}
+
+//Δέχεται μια γενιά, ενα ποσοστό ελιτισμού και ενα ενα ποσοστό μετάλλαξης
+//Απο αυτά τα χρωμοσώματα το ποσοτο ελιτισμού το οποίο επίλεξε ο χρήστης θα μεταφερθεί απευθείας
+//στην επόμενη γενία, ενώ τα υπόλοιπα χρωμοσώματα θα δημιουργηθούν μέσω των διασταυρώσεων
+//Στην τελική γενία θα γίνουν μεταλλάξεις στο ποσοτό χρωμοσωμάτων το οποίο επίλεξε ο χρήστης
+function mating_pool(generation,elitism_rate,mutation_rate){
+    let gen_odds = calculate_odds(generation)
     let next_gen = []
     //Μεταλλάξεις σε κάθε γενία
-    let num_of_mutations =  Math.floor(mutation_rate * top_genes.length)
+    let num_of_mutations =  Math.floor(mutation_rate * generation.length)
     //Ελιτισμός σε κάθε γενία
-    let elitism_num = Math.floor(top_genes.length * elitism_rate)
+    let elitism_num = Math.floor(generation.length * elitism_rate)
     //Μερική ανανέωση πληθυσμού
     for(let i = 0; i < elitism_num; i++){
-        next_gen.push(top_genes[i][1])
+        next_gen.push(generation[i][1])
     }
-    //Το μισό του πληθυσμού που πέρασε στην επόμενη γενία ως μερική ανανέωση
-    //θα συμμετάσχει στην διασταύρωση
-    elitism_half = Math.floor(elitism_num/2)
-    for(let i = elitism_half; i < top_genes.length; i++){
-        pick_chromo = Math.floor(Math.random()* top_genes.length)
-        while(pick_chromo == i){
-            pick_chromo = Math.floor(Math.random()* top_genes.length)
+    while(next_gen.length < population){
+        chromo1 = pick_chromo(gen_odds,generation)
+        chromo2 = pick_chromo(gen_odds,generation)
+        while(chromo1 == chromo2){
+            chromo1 = pick_chromo(gen_odds,generation)
+            chromo2 = pick_chromo(gen_odds,generation) 
         }
-        chromo = crossover(top_genes[i][1],top_genes[pick_chromo][1])
-        next_gen.push(chromo[0])
-        next_gen.push(chromo[1])
+        new_chromos = crossover(chromo1,chromo2)
+        next_gen.push(new_chromos[0])
+        next_gen.push(new_chromos[1])
     }
+
     for(let i = 0; i < num_of_mutations; i++){
         let chromosome = Math.floor(Math.random() * next_gen.length)
         next_gen[chromosome] = mutation(next_gen[chromosome])
