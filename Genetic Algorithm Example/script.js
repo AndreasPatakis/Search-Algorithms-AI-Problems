@@ -8,7 +8,6 @@ var cellElements = document.querySelectorAll('[data-cell]')
 //Είναι η βασική μας συνάρτηση, καλεί τα πάντα.
 async function startClicked(){
     population = parseInt(document.getElementById("population").value)
-    console.log(population)
     btn = document.getElementById("startBtn").disabled = true;
     var e = document.getElementById("elitism");
     var elitism_rate = e.value*0.01;
@@ -20,15 +19,15 @@ async function startClicked(){
     var gen_num = 0
     let chromo_length = ranked_gen[0][1].length
     while(!check_solution(ranked_gen[0][1],solution_arr)){
-        gen_num+=1       
+        gen_num+=1
         updateView(gen_num,avg_fitness(ranked_gen,chromo_length))
         ranked_gen = top_N_chromosomes(gen,population).slice()
         gen = mating_pool(ranked_gen.slice(0,population),elitism_rate,mutation_rate).slice()
         cleanGrid()
-        printChromosome(ranked_gen[0][1])  
+        printChromosome(ranked_gen[0][1])
         await sleep(20)
     }
-    ranked_gen = top_N_chromosomes(gen,10)
+    ranked_gen = top_N_chromosomes(gen,population)
     cleanGrid()
     printChromosome(ranked_gen[0][1])
     updateView(gen_num,avg_fitness(ranked_gen,chromo_length))
@@ -77,7 +76,7 @@ function manhattan_distance(curr_block, target){
     //If both current block and target block are on the same floor
     else{
         h_dist = 0
-        next_block = curr_block 
+        next_block = curr_block
     }
     //Calculating width distance
     w_dist = Math.abs(target-next_block)
@@ -136,7 +135,7 @@ function initial_generation(population){
             }
         }
         generation.push(chromosome)
-    } 
+    }
     return generation
 }
 
@@ -238,7 +237,7 @@ function mating_pool(generation,elitism_rate,mutation_rate){
         chromo2 = pick_chromo(gen_odds,generation)
         while(chromo1 == chromo2){
             chromo1 = pick_chromo(gen_odds,generation)
-            chromo2 = pick_chromo(gen_odds,generation) 
+            chromo2 = pick_chromo(gen_odds,generation)
         }
         new_chromos = crossover(chromo1,chromo2)
         next_gen.push(new_chromos[0])
