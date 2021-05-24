@@ -1,12 +1,13 @@
 const MARKED = 'marked'
 var population = 100
-//Πίνακας με τις θέσεις οι οποίες αποτελούν την λύση μας, σχηματίζουν το γράμμα Π στο grid
+//Πίνακας με τις θέσεις οι οποίες αποτελούν την λύση μας, σχηματίζουν το γράμμα "Π" στο grid
 const solution_arr = [71, 64, 57, 50, 43, 36, 29, 22, 15, 8, 9, 10, 11, 12, 19, 26, 33, 40, 47, 54, 61, 68, 75]
 var cellElements = document.querySelectorAll('[data-cell]')
 
 //Η συνάρτηση η οποία εκτελείται οταν ο χρήστης πατάει το κουμπί start
 //Είναι η βασική μας συνάρτηση, καλεί τα πάντα.
 async function startClicked(){
+    printChromosome(solution_arr)
     population = parseInt(document.getElementById("population").value)
     btn = document.getElementById("startBtn").disabled = true;
     var e = document.getElementById("elitism");
@@ -59,6 +60,7 @@ function printChromosome(chromosome){
     });
 }
 
+//Δεν χρησιμοποιήθηκε τελικά
 function manhattan_distance(curr_block, target){
     //Calculationg height distance
     target_floor = Math.floor(target/7) + 1
