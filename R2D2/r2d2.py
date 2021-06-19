@@ -21,6 +21,15 @@ def valid_pos(state,grid):
         positions.append([state.x, state.y + 1])
     return positions
 
+def visited(state):
+    visited = []
+    state = state.previous_state
+    while state != None:
+        pos = [state.x,state.y]
+        visited.append(pos)
+        state = state.previous_state
+    return visited
+
 def order_states(states):
     for i in range(len(states)):
         winner = states[i]
@@ -28,13 +37,15 @@ def order_states(states):
         #Find the minimum cost out of all our state objects
         min_cost = min(states[k].cost for k in range(i,len(states)))
         #Find all the states that share the minimum cost
+        #input(min_cost)
         for index in range(i,len(states)):
             if states[index].cost == min_cost:
                 curr_states.append([states[index],index])
-                winner = states[i]
+                winner = [states[i],index]
+        #print("curr:",len(curr_states))
         #If more than one states share the same cost, order by minimum x
         if len(curr_states) > 1:
-            min_x = min(curr_states[j][0].cost for j in range(len(curr_states)))
+            min_x = min(curr_states[j][0].x for j in range(len(curr_states)))
             same_x = []
             for curr_state in curr_states:
                 if curr_state[0].x == min_x:
@@ -42,11 +53,12 @@ def order_states(states):
                     winner = curr_state
             #if more than one states share the same x, order by minimum y
             if len(same_x) > 1:
-                min_y = min(same_x[j][0].cost for j in range(len(same_x)))
+                min_y = min(same_x[j][0].y for j in range(len(same_x)))
                 for element in same_x:
                     if element[0].y == min_y:
                         winner = element
         tmp = states[i]
+        #input(winner[1])
         states[i] = states[winner[1]]
         states[winner[1]] = tmp
     return states
@@ -57,21 +69,23 @@ def bfs(curr_state,cost_grid):
     return ordered_next_states
 
 def expand_state(curr_state,cost_grid):
+    already_visited = visited(curr_state)
     valid_positions = valid_pos(curr_state,cost_grid)
     states = []
     for pos in valid_positions:
         x = pos[0]
         y = pos[1]
         cost = cost_grid[x][y]
-        state = State(x,y,cost,curr_state)
-        states.append(state)
+        if [x,y] not in already_visited:
+            state = State(x,y,cost,curr_state)
+            states.append(state)
     return states
 
 def calc_cost(state):
     cost = 0
-    while state.previous != None:
+    while state.previous_state != None:
         cost += state.cost
-        state = state.prev_state
+        state = state.previous_state
     return cost
 
 def is_solution(curr_state,final_state):
@@ -84,38 +98,43 @@ def is_better_solution(curr_state,prev_solution,final_state):
     if prev_solution != None:
         curr_state_cost = calc_cost(curr_state)
         prev_solution_cost = calc_cost(prev_solution)
-        if curr_state_cost < solution_found_cost:
+        if curr_state_cost <= prev_solution_cost:
             return True
     else:
         return True
+    return False
 
 def find_solution(states,final_state,cost_grid):
+    best_solutions = []
     best_solution = None
     while len(states) > 0:
         curr_state = states.pop(0)
         if is_solution(curr_state,final_state):
             if is_better_solution(curr_state,best_solution,final_state):
+                best_solutions.append(curr_state)
                 best_solution = curr_state
-                print_solution(best_solution)
         else:
             next_states = bfs(curr_state,cost_grid)
             for state in next_states:
                 states.append(state)
-    return best_solution
+    return best_solutions
 
 def print_solution(state):
+    cost = calc_cost(state)
     positions = []
-    for pos in state:
-        positions.append(pos)
+    while state != None:
+        positions.append(state)
+        state = state.previous_state
     positions.reverse()
     print("-"*50)
     print("-"*50)
     for i,pos in enumerate(positions[:-1]):
         if i == 0:
-            print("Starting point: [",pos[0]," ",pos[1],"]")
+            print("Starting point: [",pos.x+1," ",pos.y+1,"]")
         else:
-            print("Next point: [",pos[0]," ",pos[1],"]")
-    print("Final point: [",pos[0]," ",pos[1],"]")
+            print("Next point: [",pos.x+1," ",pos.y+1,"]")
+    print("Final point: [",positions[-1].x+1," ",positions[-1].y+1,"]")
+    print("\nThis solution has a cost of: ",cost)
     print("-"*50)
     print("-"*50)
 
@@ -136,7 +155,12 @@ if __name__ == '__main__':
 
     queue.append(init_state)
 
-    solution = find_solution(queue,final_state,cost_grid)
+    solutions = find_solution(queue,final_state,cost_grid)
 
-    print("BEST SOLUTION FOUND: \n")
-    print_solution(solution)
+    print("-"*30,"BEST SOLUTIONS FOUND\n","-"*30)
+
+    print("FOUND ",len(solutions)," SOLUTIONS WITH THE SAME COST.")
+    for i,solution in enumerate(solutions):
+        print("\nSOLUTION: ",i+1)
+        print_solution(solution)
+        input("Press any key to see the next one")
