@@ -2,10 +2,11 @@ import numpy as np
 import random as rand
 
 class Neural_Network:
-    def __init__(self,X,Layers,a):
+    def __init__(self,X,Layers,a,activation_type="sigmoid"):
         self.X = X
         self.Layers = Layers
         self.Learning_Rate = a
+        self.Activation_Function = activation_type
         self.Weights = []
         self.Biases = np.array
         self.H = []
@@ -19,7 +20,8 @@ class Neural_Network:
         return W@X+b
 
     def __activation_out(self,net):
-        return self.__sigmoid(net)
+        return self.__activation_fun(net)
+        #return self.__sigmoid(net)
 
     def __sigmoid(self,x):
         return 1/(1 + np.exp(-x))
@@ -29,6 +31,28 @@ class Neural_Network:
         r = f * (1 - f)
         return r
 
+    def __relu(self,x):
+        if x < 0:
+            return x
+        return x
+
+    def __d_relu(self,z):
+        if z < 0:
+            return 0
+        return 1
+
+    def __activation_fun(self, x):
+        if self.Activation_Function == "sigmoid":
+            return self.__sigmoid(x)
+        elif self.Activation_Function == "relu":
+            return self.__relu(x)
+
+    def __d_activation_fun(self,z):
+        if self.Activation_Function == "sigmoid":
+            return self.__d_sigmoid(z)
+        elif self.Activation_Function == "relu":
+            return self.__d_relu(z)
+
     #Calculates the derivative dErrorTotal/dh(L-1)out for the node curr_node
     def __d_SSR(self,observed,curr_node):
         sum = 0
@@ -36,7 +60,8 @@ class Neural_Network:
             predicted = self.H[-1][node][1]
             z = self.H[-1][node][0]
             w = self.Weights[-1][curr_node][node]
-            sum += -2*(observed[node]-predicted)*self.__d_sigmoid(z)*w
+            #sum += -2*(observed[node]-predicted)*self.__d_sigmoid(z)*w
+            sum += -2*(observed[node]-predicted)*self.__d_activation_fun(z)*w
         return sum
 
     #Calculates the derivate of every node(h_out)
@@ -48,7 +73,7 @@ class Neural_Network:
         d_h_out = 0
         for node in range(next_layer_nodes):
             d_h_out_next_node = self.d_Hout_Total[next_layer][node]
-            d_act_next_node = self.__d_sigmoid(self.H[next_layer][node][0])
+            d_act_next_node = self.__d_activation_fun(self.H[next_layer][node][0])
             d_w_next_node = self.Weights[next_layer][curr_node][node]
             d_next_node = d_h_out_next_node * d_act_next_node * d_w_next_node
             d_h_out += d_next_node
@@ -120,10 +145,10 @@ class Neural_Network:
             z = self.H[-1][curr_node][0]
             d_h_out_last = -2*(observed[curr_node]-predicted_curr)
             self.d_Hout_Total[layers-1][curr_node] = d_h_out_last
-            b = d_h_out_last * self.__d_sigmoid(z)
+            b = d_h_out_last * self.__d_activation_fun(z)
             for prev_node in range(self.Layers[-2]):
                 predicted_prev = self.H[-2][prev_node][1]
-                derivate = d_h_out_last * self.__d_sigmoid(z)*predicted_prev
+                derivate = d_h_out_last * self.__d_activation_fun(z)*predicted_prev
                 w_temp.append(derivate)
             w_reverse[:,curr_node] += np.array(w_temp).T
             b_reverse[curr_node] += b
@@ -147,7 +172,7 @@ class Neural_Network:
                 w_temp = []
                 d_h_out = self.__d_hout(layer,node)
                 self.d_Hout_Total[layer][node] = d_h_out
-                z = self.__sigmoid(self.H[layer][node][0])
+                z = self.__activation_fun(self.H[layer][node][0])
                 b = d_h_out*z
                 if(layer == 0):
                     for input in set:
@@ -197,7 +222,6 @@ class Neural_Network:
                     step_size = derivative*self.Learning_Rate
                     new_bias = old_bias - step_size
                     self.Biases[layer][node] = new_bias
-            #print(self.d_Weights)
             self.d_Weights = []
             self.d_Biases = []
 
@@ -206,7 +230,6 @@ class Neural_Network:
         prediction = []
         result = observed.tolist()
         last_layer = self.H[-1]
-        #print(last_layer)
         for node in last_layer:
             prediction.append(node[1])               #0 for net value(before normalization(sigmoid)), 1 is for output value
         pos_prediction = prediction.index(max(prediction))
@@ -215,6 +238,10 @@ class Neural_Network:
             return 1
         else:
             return 0
+
+    def __normalize(self,dataset):
+        max_value = np.amax(dataset)
+        return np.true_divide(dataset,max_value)
 
     def feed_forward_result(self,set):
         self.__forward_feed(set)
@@ -232,10 +259,12 @@ class Neural_Network:
 
     def train(self,X,Y,epochs,batch):
         X = np.array(X).T
-        Y = np.array(Y).T
+        #Y = np.array(Y).T
+        Y = self.__normalize(np.array(Y).T)
         for epoch in range(epochs):
             self.__GradientDescent(X,Y,batch)
-            print("\tEpoch: ",epoch+1,"/",epochs," completed.")
+            self.test(X.T,Y.T)
+            print("\tEpoch: ",epoch+1,"/",epochs," completed. Accuracy: ",self.Evaluation)
 
     def test(self,X,Y):
         X = np.array(X).T
